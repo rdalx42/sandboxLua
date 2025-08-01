@@ -78,5 +78,9 @@ function love.keypressed(key)
         selected_part = tonumber(key)
     elseif key == "r" then 
         grid:reset()
+    elseif key == "5" then 
+        selected_part=7
+    elseif key == "6"then
+        selected_part=8
     end
 end
