@@ -8,6 +8,8 @@ color_dictionary = {
     [4] = {0.6, 0.3, 0.1, 1},
     [5] = {0, 1, 213 / 255, 1},
     [6] = {0.3, 0.5, 0.55, 1},
+    [7] = {0.3, 0.1, 0, 1},
+    [8] = {0.25, 0.8, 0.35, 1}
 }
 
 speed_dictionary = {
@@ -17,6 +19,8 @@ speed_dictionary = {
     [4] = math.huge,
     [5] = 0.1,
     [6] = 0.1,
+    [7] = 0.5,
+    [8] = 0.5,
 }
 
 local BURN_THRESHOLD = 1.5
@@ -103,6 +107,19 @@ local function splash_water(self, row, col)
     end
 end
 
+local function is_touching_water(self, r, c)
+    local offsets = {
+        {-1, 0}, {1, 0}, {0, -1}, {0, 1}
+    }
+    for _, offset in ipairs(offsets) do
+        local nr, nc = r + offset[1], c + offset[2]
+        if is_inside(nr, nc, self.rows, self.cols) and self.grid[nr][nc] == 2 then
+            return true
+        end
+    end
+    return false
+end
+
 local function update_pixel(self, row, col)
     local g = self.grid
     local v = self.velocity
@@ -115,6 +132,27 @@ local function update_pixel(self, row, col)
     if self.set_color[row][col] == 0 then
         local base_color = color_dictionary[pixel] or {1, 1, 1, 1}
         self.set_color[row][col] = vary_color(base_color)
+    end
+
+    if pixel == 8 and is_touching_water(self, row, col) then
+        g[row][col] = 7
+        self.burn_timer[row][col] = 0
+        self.set_color[row][col] = vary_color(color_dictionary[7])
+        return
+    end
+
+    if pixel == 7 then
+        if is_touching_water(self, row, col) then
+            self.burn_timer[row][col] = 0
+        else
+            self.burn_timer[row][col] = self.burn_timer[row][col] + self.dt
+            if self.burn_timer[row][col] >= 3 then
+                g[row][col] = 8
+                self.set_color[row][col] = vary_color(color_dictionary[8])
+                self.burn_timer[row][col] = 0
+                return
+            end
+        end
     end
 
     if pixel == 4 then return end
@@ -311,7 +349,7 @@ function Grid:upd()
     for i = 1, self.rows do
         for j = 1, self.cols do
             if self.grid[i][j] ~= 4 then
-                self.burn_timer[i][j] = 0
+                self.burn_timer[i][j] = self.burn_timer[i][j]
             end
         end
     end
